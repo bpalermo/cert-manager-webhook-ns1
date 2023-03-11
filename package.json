@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "@semantic-release/git": "^10.0.1",
-    "semantic-release-helm": "^2.2.0"
-  }
-}
