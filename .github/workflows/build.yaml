@@ -18,7 +18,7 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     -
-      name: CI
+      name: Build
       uses: "./.github/template/build"
       with:
         gh-token: ${{ secrets.GH_TOKEN }}

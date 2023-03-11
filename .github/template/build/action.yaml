@@ -33,7 +33,7 @@ runs:
     env:
       GH_TOKEN: ${{ inputs.gh-token }}
     run: |
-      npm install --no-package-lock semantic-release-helm
+      npm install --no-package-lock semantic-release-helm @semantic-release/git
       npx semantic-release
   -
     name: Docker metadata
