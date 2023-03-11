@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-22.04
+    environment: prd
+    steps:
+    -
+      name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    -
+      name: CI
+      uses: "./.github/template/build"
+      with:
+        gh-token: ${{ secrets.GH_TOKEN }}
+        docker-username: ${{ secrets.DOCKERHUB_USERNAME }}
+        docker-token: ${{ secrets.DOCKERHUB_TOKEN }}
+        quay-username: ${{ secrets.QUAY_USERNAME }}
+        quay-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
