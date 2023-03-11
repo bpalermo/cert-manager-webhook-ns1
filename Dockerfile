@@ -15,4 +15,4 @@ RUN --mount=target=. \
 FROM gcr.io/distroless/static-debian11
 WORKDIR /
 COPY --from=build /go/bin/webhook /webhook
-CMD ["/webhook"]
+ENTRYPOINT ["/webhook"]
