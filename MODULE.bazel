@@ -20,8 +20,8 @@ go_sdk.download(version = "1.26.0")
 
 # Run `go vet`-equivalent static analysis on first-party code during build/test.
 go_sdk.nogo(
-    nogo = "//:nogo",
     includes = ["//:__subpackages__"],
+    nogo = "//:nogo",
 )
 
 # Go module dependencies (resolved from go.mod) ----------------------------
@@ -45,9 +45,9 @@ use_repo(
 )
 
 # Helm toolchain -----------------------------------------------------------
+# Hermetic, pinned helm downloaded by rules_helm (no host helm / setup-helm).
 helm = use_extension("@rules_helm//helm:extensions.bzl", "helm")
-helm.host_tools()
-use_repo(helm, "helm", "helm_toolchains")
+use_repo(helm, "helm_toolchains")
 
 register_toolchains("@helm_toolchains//:all")
 

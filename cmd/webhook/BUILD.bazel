@@ -1,4 +1,7 @@
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_img//img:image.bzl", "image_from_binary")
+load("@rules_img//img:push.bzl", "image_push")
 
 go_library(
     name = "webhook_lib",
@@ -14,5 +17,40 @@ go_library(
 go_binary(
     name = "webhook",
     embed = [":webhook_lib"],
+    visibility = ["//visibility:public"],
+)
+
+# Image (app) version tag. CI sets it to IMAGE_COMMIT_SHA via
+# `--//cmd/webhook:version=<sha>`; defaults to "dev" for local builds.
+string_flag(
+    name = "version",
+    build_setting_default = "dev",
+    visibility = ["//visibility:public"],
+)
+
+# Multi-arch (linux/amd64 + linux/arm64) image. entrypoint/cmd/env are taken
+# from the :webhook binary automatically.
+image_from_binary(
+    name = "image",
+    base = "@distroless_static",
+    binary = ":webhook",
+    platforms = [
+        "//:linux_amd64",
+        "//:linux_arm64",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# `bazel run //cmd/webhook:push` pushes to GHCR, tagged latest + the app version.
+image_push(
+    name = "push",
+    build_settings = {"VERSION": ":version"},
+    image = ":image",
+    registry = "ghcr.io",
+    repository = "bpalermo/cert-manager-webhook-ns1",
+    tag_list = [
+        "latest",
+        "{{.VERSION}}",
+    ],
     visibility = ["//visibility:public"],
 )

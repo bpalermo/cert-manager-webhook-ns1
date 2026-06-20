@@ -70,7 +70,10 @@ rules:
   verbs:
   - 'create'
 ---
-# Grant NS1 webhook permission to read the cert secret
+# Grant the NS1 webhook permission to read only the NS1 API key Secret.
+# A ClusterRole (not a namespaced Role) is required because the Secret lives in
+# the Issuer's namespace, which can be any namespace. resourceNames restricts
+# `get` to the configured Secret name.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -85,6 +88,8 @@ rules:
   - ""
   resources:
   - secrets
+  resourceNames:
+  - {{ .Values.ns1.apiKeySecretName | quote }}
   verbs:
   - get
 # K8s 1.15.8 and below has a bug noted here: https://github.com/kubernetes/kubernetes/issues/86359

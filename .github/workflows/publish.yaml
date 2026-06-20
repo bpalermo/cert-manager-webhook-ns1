@@ -1,0 +1,69 @@
+name: Publish
+
+# Publishes on every push to main. The app/image version is IMAGE_COMMIT_SHA
+# (last commit touching image inputs); the image is only (re)pushed when that
+# tag does not already exist, so a chart-only change publishes just the chart.
+on:
+  push:
+    branches:
+    - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_REPO: ghcr.io/bpalermo/cert-manager-webhook-ns1
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name: Checkout
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+    -
+      name: Setup Bazel
+      uses: bazel-contrib/setup-bazel@0.19.0
+      with:
+        bazelisk-cache: true
+        disk-cache: true
+        repository-cache: true
+    -
+      name: Compute image commit SHA
+      id: img
+      run: |
+        sha="$(git log -1 --format=%h -- cmd pkg go.mod go.sum MODULE.bazel MODULE.bazel.lock)"
+        echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+        echo "Image version: ${sha}"
+    -
+      name: Log in to GitHub Container Registry
+      # Writes ~/.docker/config.json, used by rules_img for the image push and
+      # by helm for the chart push (via HELM_REGISTRY_CONFIG below).
+      uses: docker/login-action@v4
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    -
+      name: Push image (skip if tag already exists)
+      env:
+        IMAGE_COMMIT_SHA: ${{ steps.img.outputs.sha }}
+      run: |
+        if docker manifest inspect "${IMAGE_REPO}:${IMAGE_COMMIT_SHA}" >/dev/null 2>&1; then
+          echo "Image ${IMAGE_REPO}:${IMAGE_COMMIT_SHA} already exists — skipping image push."
+        else
+          bazel run //cmd/webhook:push "--//cmd/webhook:version=${IMAGE_COMMIT_SHA}"
+        fi
+    -
+      name: Push chart
+      env:
+        IMAGE_COMMIT_SHA: ${{ steps.img.outputs.sha }}
+      run: |
+        # helm reads the docker-style auth written by docker/login-action.
+        export HELM_REGISTRY_CONFIG="${DOCKER_CONFIG:-$HOME/.docker}/config.json"
+        bazel run //chart:chart.push_registry

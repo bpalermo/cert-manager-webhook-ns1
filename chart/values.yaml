@@ -10,6 +10,13 @@ certManager:
   namespace: cert-manager
   serviceAccountName: cert-manager
 
+ns1:
+  # Name of the Secret holding the NS1 API key that Issuers reference via
+  # `webhook.config.apiKeySecretRef.name`. The webhook is granted get access to
+  # Secrets with this name (in any namespace, since the Secret lives in the
+  # Issuer's namespace).
+  apiKeySecretName: ns1-credentials
+
 replicaCount: 1
 
 image:

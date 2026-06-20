@@ -3,11 +3,15 @@ load("@rules_helm//helm:defs.bzl", "helm_chart")
 # Packages chart/ into a Helm chart and provides OCI push targets:
 #   //chart:chart                 -> the packaged .tgz
 #   //chart:chart.push_registry   -> push the chart to GHCR (chart only)
-# The chart version/appVersion come from Chart.yaml (maintained by release-please).
+#
+# The chart version/appVersion are the {STABLE_VERSION} stamp in Chart.yaml,
+# replaced at package time from bazel/workspace_status.sh (stamp = 1 = always),
+# so they track the release version just like the image tag.
 helm_chart(
     name = "chart",
     chart = "Chart.yaml",
     registry_url = "oci://ghcr.io/bpalermo/charts",
+    stamp = 1,
     values = "values.yaml",
     visibility = ["//visibility:public"],
 )
