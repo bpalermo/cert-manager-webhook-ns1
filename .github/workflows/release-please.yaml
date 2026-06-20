@@ -2,6 +2,11 @@ name: Release Please
 
 # Conventional-commit driven versioning. Opens/maintains a release PR on main;
 # merging it creates the git tag + GitHub release, which triggers release.yaml.
+#
+# Set a RELEASE_PLEASE_TOKEN secret (PAT with contents+pull-requests write) for
+# full automation: it lets the release PR run CI and lets the created tag trigger
+# release.yaml. Without it, the default GITHUB_TOKEN is used and those downstream
+# workflows must be run manually.
 on:
   push:
     branches:
@@ -20,4 +25,4 @@ jobs:
       name: Release Please
       uses: googleapis/release-please-action@v4
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
