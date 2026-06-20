@@ -10,10 +10,13 @@ certManager:
   namespace: cert-manager
   serviceAccountName: cert-manager
 
+replicaCount: 1
+
 image:
-  repository: quay.io/palermo/cert-manager-webhook-ns1
-  tag: latest
-  pullPolicy: Always
+  repository: ghcr.io/bpalermo/cert-manager-webhook-ns1
+  # Defaults to the chart's appVersion when left empty.
+  tag: ""
+  pullPolicy: IfNotPresent
 
 nameOverride: ""
 fullnameOverride: ""

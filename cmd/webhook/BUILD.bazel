@@ -1,0 +1,18 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "webhook_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/bpalermo/cert-manager-webhook-ns1/cmd/webhook",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pkg/solver",
+        "@com_github_cert_manager_cert_manager//pkg/acme/webhook/cmd",
+    ],
+)
+
+go_binary(
+    name = "webhook",
+    embed = [":webhook_lib"],
+    visibility = ["//visibility:public"],
+)

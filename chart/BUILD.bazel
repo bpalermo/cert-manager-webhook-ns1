@@ -1,0 +1,13 @@
+load("@rules_helm//helm:defs.bzl", "helm_chart")
+
+# Packages chart/ into a Helm chart and provides OCI push targets:
+#   //chart:chart                 -> the packaged .tgz
+#   //chart:chart.push_registry   -> push the chart to GHCR (chart only)
+# The chart version/appVersion come from Chart.yaml (maintained by release-please).
+helm_chart(
+    name = "chart",
+    chart = "Chart.yaml",
+    registry_url = "oci://ghcr.io/bpalermo/charts",
+    values = "values.yaml",
+    visibility = ["//visibility:public"],
+)

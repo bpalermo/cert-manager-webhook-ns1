@@ -1,0 +1,19 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "solver",
+    srcs = ["ns1.go"],
+    importpath = "github.com/bpalermo/cert-manager-webhook-ns1/pkg/solver",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_cert_manager_cert_manager//pkg/acme/webhook/apis/acme/v1alpha1",
+        "@com_github_cert_manager_cert_manager//pkg/apis/meta/v1:meta",
+        "@com_github_cert_manager_cert_manager//pkg/issuer/acme/dns/util",
+        "@in_gopkg_ns1_ns1_go_v2//rest",
+        "@in_gopkg_ns1_ns1_go_v2//rest/model/dns",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:apiextensions",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_client_go//kubernetes",
+        "@io_k8s_client_go//rest",
+    ],
+)

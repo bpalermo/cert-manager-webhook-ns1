@@ -1,0 +1,33 @@
+load("@gazelle//:def.bzl", "gazelle")
+load("@rules_go//go:def.bzl", "nogo")
+
+# gazelle:prefix github.com/bpalermo/cert-manager-webhook-ns1
+gazelle(name = "gazelle")
+
+# Static analysis (go vet analyzers) run on first-party Go during build/test.
+nogo(
+    name = "nogo",
+    vet = True,
+    visibility = ["//visibility:public"],
+)
+
+exports_files([".shellcheckrc"])
+
+# Target platforms for multi-arch container images.
+platform(
+    name = "linux_amd64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+platform(
+    name = "linux_arm64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:arm64",
+    ],
+    visibility = ["//visibility:public"],
+)

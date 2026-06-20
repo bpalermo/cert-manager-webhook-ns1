@@ -1,0 +1,3 @@
+# shellcheck configuration
+# https://www.shellcheck.net/wiki/Ignore
+external-sources=true

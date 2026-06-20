@@ -1,0 +1,15 @@
+load("@rules_shell//shell:sh_library.bzl", "sh_library")
+load("//tools/lint:linters.bzl", "shellcheck_test")
+
+# Emits version/git stamps consumed by rules_img / rules_helm under --stamp.
+sh_library(
+    name = "workspace_status",
+    srcs = ["workspace_status.sh"],
+    visibility = ["//visibility:public"],
+)
+
+# Lints workspace_status.sh; runs as part of `bazel test //...`.
+shellcheck_test(
+    name = "workspace_status_shellcheck_test",
+    srcs = [":workspace_status"],
+)
