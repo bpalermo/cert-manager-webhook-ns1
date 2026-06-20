@@ -72,7 +72,7 @@ func (c *Ns1DNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 
 	// Create a TXT Record for domain.zone with answer set to DNS challenge key
 	// Short TTL is fine, as we delete the record after the challenge is solved.
-	record := dns.NewRecord(zone, domain, "TXT")
+	record := dns.NewRecord(zone, domain, "TXT", nil, nil)
 	record.TTL = 600
 	record.AddAnswer(dns.NewTXTAnswer(ch.Key))
 
@@ -207,7 +207,7 @@ func (c *Ns1DNSProviderSolver) parseChallenge(ch *v1alpha1.ChallengeRequest) (
 ) {
 
 	if zone, err = util.FindZoneByFqdn(
-		ch.ResolvedFQDN, util.RecursiveNameservers,
+		context.Background(), ch.ResolvedFQDN, util.RecursiveNameservers,
 	); err != nil {
 		return "", "", err
 	}

@@ -1,0 +1,9 @@
+common --noenable_workspace
+
+# Reproducible Go builds.
+build --incompatible_strict_action_env
+
+# Pass --config=release to stamp image/chart artifacts with version info.
+# rules_img/rules_helm stamp attrs default to "auto", which honors --stamp.
+build:release --stamp
+build:release --workspace_status_command=./bazel/workspace_status.sh

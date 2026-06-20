@@ -1,0 +1,23 @@
+name: Release Please
+
+# Conventional-commit driven versioning. Opens/maintains a release PR on main;
+# merging it creates the git tag + GitHub release, which triggers release.yaml.
+on:
+  push:
+    branches:
+    - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name: Release Please
+      uses: googleapis/release-please-action@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
