@@ -37,7 +37,7 @@ jobs:
       name: Compute image commit SHA
       id: img
       run: |
-        sha="$(git log -1 --format=%h -- cmd pkg go.mod go.sum MODULE.bazel MODULE.bazel.lock)"
+        sha="$(git log -1 --format=%H -- cmd pkg go.mod go.sum MODULE.bazel MODULE.bazel.lock)"
         echo "sha=${sha}" >> "$GITHUB_OUTPUT"
         echo "Image version: ${sha}"
     -
