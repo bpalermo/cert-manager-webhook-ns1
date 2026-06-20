@@ -192,11 +192,16 @@ func (c *Ns1DNSProviderSolver) setNS1Client(ch *v1alpha1.ChallengeRequest, cfg n
 		}
 		httpClient.Transport = tr
 	}
-	c.ns1Client = ns1Rest.NewClient(
-		httpClient,
+	opts := []func(*ns1Rest.Client){
 		ns1Rest.SetAPIKey(apiKey),
-		ns1Rest.SetEndpoint(cfg.Endpoint),
-	)
+	}
+	// Only override the endpoint when one is configured; passing "" to
+	// SetEndpoint clobbers the SDK default (https://api.nsone.net/v1/) with an
+	// empty URL, breaking every request with "unsupported protocol scheme """.
+	if cfg.Endpoint != "" {
+		opts = append(opts, ns1Rest.SetEndpoint(cfg.Endpoint))
+	}
+	c.ns1Client = ns1Rest.NewClient(httpClient, opts...)
 
 	return nil
 }
