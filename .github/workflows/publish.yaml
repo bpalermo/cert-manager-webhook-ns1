@@ -1,0 +1,65 @@
+name: Publish
+
+# Publishes on every push to main. The app/image version is IMAGE_COMMIT_SHA
+# (last commit touching image inputs); the image is only (re)pushed when that
+# tag does not already exist, so a chart-only change publishes just the chart.
+on:
+  push:
+    branches:
+    - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_REPO: ghcr.io/bpalermo/cert-manager-webhook-ns1
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name: Checkout
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+    -
+      name: Setup Bazel
+      uses: bazel-contrib/setup-bazel@0.19.0
+      with:
+        bazelisk-cache: true
+        disk-cache: true
+        repository-cache: true
+    -
+      name: Setup Helm
+      uses: azure/setup-helm@v4
+    -
+      name: Compute image commit SHA
+      id: img
+      run: |
+        sha="$(git log -1 --format=%h -- cmd pkg go.mod go.sum MODULE.bazel MODULE.bazel.lock)"
+        echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+        echo "Image version: ${sha}"
+    -
+      name: Registry login (GHCR)
+      run: |
+        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+    -
+      name: Push image (skip if tag already exists)
+      env:
+        IMAGE_COMMIT_SHA: ${{ steps.img.outputs.sha }}
+      run: |
+        if docker manifest inspect "${IMAGE_REPO}:${IMAGE_COMMIT_SHA}" >/dev/null 2>&1; then
+          echo "Image ${IMAGE_REPO}:${IMAGE_COMMIT_SHA} already exists — skipping image push."
+        else
+          bazel run //cmd/webhook:push "--//cmd/webhook:version=${IMAGE_COMMIT_SHA}"
+        fi
+    -
+      name: Push chart
+      env:
+        IMAGE_COMMIT_SHA: ${{ steps.img.outputs.sha }}
+      run: bazel run //chart:chart.push_registry

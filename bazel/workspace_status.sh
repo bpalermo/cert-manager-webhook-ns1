@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
 #
-# Emits stable/volatile build stamps consumed by rules_img / rules_helm.
-# VERSION is taken from $RELEASE_VERSION when set (CI), otherwise derived
-# from git, falling back to a dev marker.
+# Emits build stamps consumed by rules_img / rules_helm.
+#
+# STABLE_IMAGE_COMMIT_SHA identifies the app/image version: the short SHA of the
+# last commit that touched any image build input. A chart-only change leaves it
+# unchanged, so the image is not re-tagged. CI sets $IMAGE_COMMIT_SHA (computed
+# once); locally it is derived from git.
 set -euo pipefail
 
-version="${RELEASE_VERSION:-}"
-if [[ -z "${version}" ]]; then
-  version="$(git describe --tags --always --dirty 2>/dev/null || echo "0.0.0-dev")"
+# Paths whose changes affect the built image (everything except chart/).
+IMAGE_PATHS=(cmd pkg go.mod go.sum MODULE.bazel MODULE.bazel.lock)
+
+image_sha="${IMAGE_COMMIT_SHA:-}"
+if [[ -z "${image_sha}" ]]; then
+  image_sha="$(git log -1 --format=%h -- "${IMAGE_PATHS[@]}" 2>/dev/null || true)"
+  [[ -z "${image_sha}" ]] && image_sha="dev"
 fi
 
-git_sha="$(git rev-parse HEAD 2>/dev/null || echo "unknown")"
-
-echo "STABLE_VERSION ${version#v}"
-echo "STABLE_GIT_SHA ${git_sha}"
+echo "STABLE_IMAGE_COMMIT_SHA ${image_sha}"
+echo "STABLE_GIT_SHA $(git rev-parse --short HEAD 2>/dev/null || echo unknown)"

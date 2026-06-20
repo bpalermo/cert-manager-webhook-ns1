@@ -1,5 +1,5 @@
 load("@rules_shell//shell:sh_library.bzl", "sh_library")
-load("//tools/lint:linters.bzl", "shellcheck_test")
+load("//bazel/lint:linters.bzl", "shellcheck_test")
 
 # Emits version/git stamps consumed by rules_img / rules_helm under --stamp.
 sh_library(
