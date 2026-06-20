@@ -42,10 +42,20 @@ image_from_binary(
 )
 
 # `bazel run //cmd/webhook:push` pushes to GHCR, tagged latest + the app version.
+#
+# `:image` is a multi-platform image_index. `tag_list` only tags the index; its
+# child (per-platform) manifests stay untagged, and an index-only push leaves
+# them dangling on GHCR — the index resolves but each platform digest 404s on
+# pull (see issue #16). `manifest_tags` publishes one tag per child manifest so
+# every platform manifest is explicitly pushed and retained.
 image_push(
     name = "push",
     build_settings = {"VERSION": ":version"},
     image = ":image",
+    manifest_tags = [
+        "latest-{{.os}}-{{.architecture}}{{if .variant}}-{{.variant}}{{end}}",
+        "{{.VERSION}}-{{.os}}-{{.architecture}}{{if .variant}}-{{.variant}}{{end}}",
+    ],
     registry = "ghcr.io",
     repository = "bpalermo/cert-manager-webhook-ns1",
     tag_list = [

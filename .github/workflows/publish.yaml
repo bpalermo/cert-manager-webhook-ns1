@@ -50,14 +50,56 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     -
-      name: Push image (skip if tag already exists)
+      name: Push image (skip only if the multi-arch index is complete)
+      # A bare `docker manifest inspect` on the index tag is not enough: a
+      # multi-arch push can land the index while leaving its per-platform child
+      # manifests unpublished, so the index resolves but every platform digest
+      # 404s on pull (issue #16). We treat the tag as present only when the
+      # index AND all child manifests resolve, and we verify the same after
+      # pushing so an incomplete index fails the build instead of shipping.
       env:
         IMAGE_COMMIT_SHA: ${{ steps.img.outputs.sha }}
+        GH_ACTOR: ${{ github.actor }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        if docker manifest inspect "${IMAGE_REPO}:${IMAGE_COMMIT_SHA}" >/dev/null 2>&1; then
-          echo "Image ${IMAGE_REPO}:${IMAGE_COMMIT_SHA} already exists — skipping image push."
+        repo="${IMAGE_REPO#ghcr.io/}"
+        acc="application/vnd.oci.image.index.v1+json,application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.docker.distribution.manifest.v2+json"
+
+        # Succeeds only if tag $1 resolves to an index whose every child
+        # manifest also resolves. Retries to tolerate registry propagation.
+        index_complete() {
+          local tag="$1" token idx digests code d ok
+          for _ in 1 2 3 4 5; do
+            token="$(curl -fsSL -u "${GH_ACTOR}:${GH_TOKEN}" \
+              "https://ghcr.io/token?scope=repository:${repo}:pull" | jq -r .token)" || { sleep 5; continue; }
+            idx="$(curl -fsSL -H "Authorization: Bearer ${token}" -H "Accept: ${acc}" \
+              "https://ghcr.io/v2/${repo}/manifests/${tag}")" || { sleep 5; continue; }
+            digests="$(echo "${idx}" | jq -r '.manifests[].digest')"
+            [ -n "${digests}" ] || { sleep 5; continue; }
+            ok=1
+            for d in ${digests}; do
+              code="$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer ${token}" \
+                -H "Accept: ${acc}" "https://ghcr.io/v2/${repo}/manifests/${d}")"
+              if [ "${code}" != "200" ]; then echo "  child ${d} -> ${code}"; ok=0; fi
+            done
+            [ "${ok}" = "1" ] && return 0
+            sleep 5
+          done
+          return 1
+        }
+
+        if index_complete "${IMAGE_COMMIT_SHA}"; then
+          echo "Image ${IMAGE_REPO}:${IMAGE_COMMIT_SHA} already complete — skipping image push."
         else
+          echo "Image ${IMAGE_REPO}:${IMAGE_COMMIT_SHA} missing or incomplete — pushing."
           bazel run //cmd/webhook:push "--//cmd/webhook:version=${IMAGE_COMMIT_SHA}"
+          echo "Verifying every platform manifest resolves…"
+          if index_complete "${IMAGE_COMMIT_SHA}"; then
+            echo "All platform manifests present."
+          else
+            echo "::error::Pushed index ${IMAGE_REPO}:${IMAGE_COMMIT_SHA} is incomplete (a child manifest 404s)."
+            exit 1
+          fi
         fi
     -
       name: Push chart
